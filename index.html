@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <!-- PWA manifest & mobile app meta -->
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -711,6 +712,25 @@
         width: 100%;
       }
     }
+  
+    /* Safe area padding for iOS notch + full-screen web app */
+    body {
+      padding-top: calc(20px + env(safe-area-inset-top));
+      padding-bottom: calc(20px + env(safe-area-inset-bottom));
+      padding-left: calc(20px + env(safe-area-inset-left));
+      padding-right: calc(20px + env(safe-area-inset-right));
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 8px;
+        padding-top: calc(8px + env(safe-area-inset-top));
+        padding-bottom: calc(8px + env(safe-area-inset-bottom));
+        padding-left: calc(8px + env(safe-area-inset-left));
+        padding-right: calc(8px + env(safe-area-inset-right));
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -794,6 +814,7 @@
                 <th>Customer</th>
                 <th>Remarks</th>
                 <th>Progress</th>
+                <th>Handover Date</th>
                 <th>Last updated</th>
                 <th class="actions">Actions</th>
               </tr>
@@ -832,6 +853,13 @@
               <div class="field">
                 <label for="remarks">Remarks</label>
                 <textarea id="remarks" placeholder="Internal notes or special requests"></textarea>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="handoverDateField">Handover Date</label>
+                <input id="handoverDateField" type="date" />
               </div>
             </div>
 
@@ -1148,6 +1176,9 @@
       $('#chasis').value = o.chasis || '';
       $('#name').value = o.name || '';
       $('#remarks').value = o.remarks || '';
+      if ($('#handoverDateField')) {
+        $('#handoverDateField').value = o.handoverDate || '';
+      }
       document
         .querySelectorAll('[data-task-index]')
         .forEach((cb) => (cb.checked = !!(o.tasks && o.tasks[cb.dataset.taskIndex])));
@@ -1173,6 +1204,7 @@
         chasis: $('#chasis').value.trim(),
         name: $('#name').value.trim(),
         remarks: $('#remarks').value.trim(),
+        handoverDate: $('#handoverDateField') ? $('#handoverDateField').value : '',
         tasks: [],
         updatedAt: Date.now()
       };
@@ -1202,6 +1234,9 @@
       $('#chasis').value = '';
       $('#name').value = '';
       $('#remarks').value = '';
+      if ($('#handoverDateField')) {
+        $('#handoverDateField').value = '';
+      }
       document
         .querySelectorAll('[data-task-index]')
         .forEach((cb) => (cb.checked = false));
@@ -1213,7 +1248,7 @@
 
     // Export CSV
     function toCSV(rows) {
-      const headers = ['id', 'esa', 'chasis', 'name', 'remarks', 'updatedAt'].concat(
+      const headers = ['id', 'esa', 'chasis', 'name', 'remarks', 'handoverDate', 'updatedAt'].concat(
         TASKS
       );
       const lines = [headers.join(',')];
@@ -1224,6 +1259,7 @@
           r.chasis,
           r.name,
           r.remarks || '',
+          r.handoverDate || '',
           r.updatedAt || ''
         ];
         TASKS.forEach((_, i) =>
@@ -1277,21 +1313,49 @@
           .split(',')
           .map((c) => c.replace(/^"|"$/g, ''));
         if (cols.length < 5) continue;
-        const obj = {
-          id: cols[0] || uid(),
-          esa: cols[1] || '',
-          chasis: cols[2] || '',
-          name: cols[3] || '',
-          remarks: cols[4] || '',
-          updatedAt: cols[5] || Date.now(),
-          tasks: []
-        };
-        for (let t = 0; t < TASKS.length; t++) {
-          const idx = 6 + t;
-          obj.tasks[t] =
-            cols[idx] && cols[idx].trim() !== '' && cols[idx] !== '0'
-              ? true
-              : false;
+        const totalTasks = TASKS.length;
+        let obj;
+
+        if (cols.length === 7 + totalTasks) {
+          // New format with handoverDate
+          obj = {
+            id: cols[0] || uid(),
+            esa: cols[1] || '',
+            chasis: cols[2] || '',
+            name: cols[3] || '',
+            remarks: cols[4] || '',
+            handoverDate: cols[5] || '',
+            updatedAt: cols[6] || Date.now(),
+            tasks: []
+          };
+          for (let t = 0; t < totalTasks; t++) {
+            const idx = 7 + t;
+            obj.tasks[t] =
+              cols[idx] && cols[idx].trim() !== '' && cols[idx] !== '0'
+                ? true
+                : false;
+          }
+        } else if (cols.length === 6 + totalTasks) {
+          // Old format without handoverDate
+          obj = {
+            id: cols[0] || uid(),
+            esa: cols[1] || '',
+            chasis: cols[2] || '',
+            name: cols[3] || '',
+            remarks: cols[4] || '',
+            handoverDate: '',
+            updatedAt: cols[5] || Date.now(),
+            tasks: []
+          };
+          for (let t = 0; t < totalTasks; t++) {
+            const idx = 6 + t;
+            obj.tasks[t] =
+              cols[idx] && cols[idx].trim() !== '' && cols[idx] !== '0'
+                ? true
+                : false;
+          }
+        } else {
+          continue;
         }
         imported.push(obj);
       }

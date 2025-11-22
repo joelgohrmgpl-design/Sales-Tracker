@@ -1,7 +1,7 @@
 {
   "name": "Sales Order Tracker",
   "short_name": "Sales Tracker",
-  "start_url": "index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f3f5f9",
