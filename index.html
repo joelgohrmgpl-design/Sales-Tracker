@@ -11,7 +11,6 @@
   <meta name="theme-color" content="#2563eb">
 
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Sales Order Tracker</title>
   <style>
     :root {
@@ -304,7 +303,7 @@
 
     table {
       width: 100%;
-      min-width: 760px;
+      min-width: 640px;
       border-collapse: collapse;
       font-size: 12px;
     }
@@ -648,6 +647,21 @@
     }
 
     @media (max-width: 640px) {
+      /* mobile table tweaks */
+      table {
+        min-width: 100%;
+        font-size: 11px;
+      }
+      th,
+      td {
+        padding: 6px 6px;
+      }
+      .panel {
+        padding: 10px;
+      }
+      .table-wrapper {
+        max-height: none;
+      }
       body {
         padding: 12px;
       }
@@ -937,8 +951,6 @@
       'Inform Showroom manager when car coming/handover date',
       'Print documents for customer to sign',
 
-      'CAT:Final',
-      'Handover Date'
     ];
 
     // Basic utilities
@@ -1063,7 +1075,9 @@
         const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
         if (completed === total && total > 0) tr.classList.add('row-complete');
 
-        tr.innerHTML = `
+                const handoverDateText = formatDateDMY(o.handoverDate);
+
+tr.innerHTML = `
           <td class="esa-cell">
             <strong>${escapeHtml(o.esa || '')}</strong>
             <div class="small">ID: ${escapeHtml(o.id)}</div>
@@ -1087,6 +1101,7 @@
               o.id
             }" class="task-button">View / Toggle tasks</button>
           </td>
+          <td class="small">${handoverDateText}</td>
           <td class="small">${
             o.updatedAt ? new Date(o.updatedAt).toLocaleString() : ''
           }</td>
@@ -1192,6 +1207,16 @@
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+    }
+
+    function formatDateDMY(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return day + '/' + month + '/' + year;
     }
 
     // Form handling
